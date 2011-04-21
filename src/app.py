@@ -14,9 +14,17 @@ class Application:
 
     def __init__(self):
         "Create the application."
-        self.setup_indicator()
         self.setup_rpc()
+        self.setup_indicator()
+        self.setup_timer()
 
+    def tick(self):
+        self.refresh_balance()
+
+    def refresh_balance(self):
+        balance = self.rpc.getinfo()['balance']
+        self.balance_item.child.set_text("Balance: %.2f" % balance)
+        
     def setup_indicator(self):
         "Create the indicator applet."
         self.indicator = appindicator.Indicator(
@@ -30,7 +38,14 @@ class Application:
 
     def setup_rpc(self):
         self.rpc = authproxy.AuthServiceProxy("http://:secret@localhost:8332")
+        
+    def setup_timer(self):
+        gobject.timeout_add(2000, self.__tick)
 
+    def __tick(self):
+        self.tick()
+        self.setup_timer()
+        
     def setup_menu(self):
         "Create the main menu on the indicator."
         self.menu = gtk.Menu()
@@ -46,8 +61,9 @@ class Application:
 
     def add_balance_item(self):
         "Add a balance item to the menu."
-        self.balance_item = gtk.MenuItem("Balance: 10 BTC")
+        self.balance_item = gtk.MenuItem("Balance:")
         self.balance_item.set_sensitive(False)
+        self.refresh_balance()
         self.balance_item.show()
         self.menu.append(self.balance_item)
 
