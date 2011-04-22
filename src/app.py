@@ -24,7 +24,7 @@ class Application:
 
     def refresh_balance(self):
         balance = self.rpc.getinfo()['balance']
-        self.balance_item.child.set_text("Balance: %.2f" % balance)
+        self.balance_item.child.set_text(u"Balance:  %.2f \u0E3F" % balance)
         
     def setup_indicator(self):
         "Create the indicator applet."
@@ -50,19 +50,26 @@ class Application:
         "Create the main menu on the indicator."
         self.menu = gtk.Menu()
         self.add_balance_item()
+        self.add_send_coins_item()
         self.add_separator()
         self.add_quit_item()
         return self.menu
 
     def add_separator(self):
+        "Add a separator to the menu."
         separator = gtk.SeparatorMenuItem()
         separator.show()
         self.menu.append(separator)
 
+    def add_send_coins_item(self):
+        "Add a 'Send Coins' item to the menu."
+        send_coins_item = gtk.MenuItem("Send Coins")
+        send_coins_item.show()
+        self.menu.append(send_coins_item)
+
     def add_balance_item(self):
         "Add a balance item to the menu."
-        self.balance_item = gtk.MenuItem("Balance:")
-        self.balance_item.set_sensitive(False)
+        self.balance_item = gtk.MenuItem("Balance")
         self.refresh_balance()
         self.balance_item.show()
         self.menu.append(self.balance_item)
