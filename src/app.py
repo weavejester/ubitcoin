@@ -1,7 +1,7 @@
-import gobject
 import gtk
 import appindicator
 import os.path
+import timer
 import bitcoin
 import send_coins
 
@@ -15,18 +15,14 @@ class Application(object):
         gtk.main()
 
     def __init__(self):
-        self.client = bitcoin.Client()
-        self.set_timer()
+        self.setup_client()
         self.setup_indicator()
         self.setup_dialogs()
-        self.client.on_transaction(self.update_balance)
-
-    def tick(self):
-        self.client.poll()
 
     def update_balance(self):
-        text = u"Balance:  %.2f \u0E3F" % self.client.balance
-        self.balance_item.child.set_label(text)
+        balance = self.client.get_balance()
+        menu_text = u"Balance:  %.2f \u0E3F" % balance
+        self.balance_item.child.set_label(menu_text)
         self.refresh_menu()
 
     def refresh_menu(self):
@@ -47,10 +43,12 @@ class Application(object):
 
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
         self.indicator.set_menu(self.setup_menu())
-        
-    def set_timer(self):
-        self.tick()
-        gobject.timeout_add(2000, self.set_timer)
+
+    def setup_client(self):
+        "Setup the Bitcoin RPC client."
+        self.client = bitcoin.Client()
+        self.client.on_transaction(self.update_balance)
+        timer.periodic_timer(2000, self.client.poll_transactions)
 
     def setup_dialogs(self):
         self.send_coins_dialog = send_coins.SendCoinsDialog()

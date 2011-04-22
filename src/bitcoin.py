@@ -20,30 +20,26 @@ class Client(object):
     def __init__(self):
         self.setup_config()
         self.setup_rpc()
-        self.setup_events()
+        self.on_transaction = Event()
         self.last_transaction = None
 
-    def poll(self):
-        "Poll the Bitcoin server for updates."
+    def poll_transactions(self):
+        "Poll the Bitcoin server for new transactions."
         last_last_transaction = self.last_transaction
-        self.last_transaction = self.fetch_last_transaction()
+        self.last_transaction = self.get_last_transaction()
 
         if last_last_transaction != self.last_transaction:
             self.on_transaction.trigger()
 
-    def update_balance(self):
-        self.balance = self.rpc.getinfo()['balance']
+    def get_balance(self):
+        return self.rpc.getinfo()['balance']
 
-    def fetch_last_transaction(self):
+    def get_last_transaction(self):
         return self.rpc.listtransactions("*", 1)[0]
 
     def setup_config(self):
         config_path = os.path.expanduser("~/.bitcoin/bitcoin.conf")
         self.config = ConfigFile(config_path).read()
-
-    def setup_events(self):
-        self.on_transaction = Event()
-        self.on_transaction(self.update_balance)
 
     def setup_rpc(self):
         rpc_url = "http://%s:%s@%s:%s" % (
