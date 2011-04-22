@@ -1,7 +1,8 @@
 import gobject
 import gtk
 import appindicator
-import authproxy
+from authproxy import AuthServiceProxy
+from config_file import ConfigFile
 import os.path
 
 class Application:
@@ -37,7 +38,13 @@ class Application:
         self.indicator.set_menu(self.setup_menu())
 
     def setup_rpc(self):
-        self.rpc = authproxy.AuthServiceProxy("http://:secret@localhost:8332")
+        config = ConfigFile().read()
+        rpc_url = "http://%s:%s@%s:%s" % (
+            config.get('rpcuser', ''),
+            config['rpcpassword'],
+            config.get('rpcconnect', '127.0.0.1'),
+            config.get('rpcport', '8332'))
+        self.rpc = AuthServiceProxy(rpc_url)
         
     def setup_timer(self):
         gobject.timeout_add(2000, self.__tick)
