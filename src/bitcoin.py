@@ -23,6 +23,14 @@ class Client(object):
         self.on_transaction = Event()
         self.last_transaction = None
 
+    def get_balance(self):
+        "Get the current bitcoin balance."
+        return self.rpc.getinfo()['balance']
+
+    def send_to_address(self, address, amount):
+        "Send an amount of bitcoins to a bitcoin address."
+        self.rpc.sendtoaddress(address, amount)
+
     def poll_transactions(self):
         "Poll the Bitcoin server for new transactions."
         last_last_transaction = self.last_transaction
@@ -30,9 +38,6 @@ class Client(object):
 
         if last_last_transaction != self.last_transaction:
             self.on_transaction.trigger()
-
-    def get_balance(self):
-        return self.rpc.getinfo()['balance']
 
     def get_last_transaction(self):
         return self.rpc.listtransactions("*", 1)[0]

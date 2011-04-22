@@ -3,7 +3,7 @@ import appindicator
 import os.path
 import timer
 import bitcoin
-import send_coins
+from send_coins import SendCoinsDialog
 
 class Application(object):
     "Main application class. Use Application.main to start."
@@ -51,7 +51,7 @@ class Application(object):
         timer.periodic_timer(2000, self.client.poll_transactions)
 
     def setup_dialogs(self):
-        self.send_coins_dialog = send_coins.SendCoinsDialog()
+        self.send_coins_dialog = SendCoinsDialog(self.client)
 
     def setup_menu(self):
         "Create the main menu on the indicator."

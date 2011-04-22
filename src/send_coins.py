@@ -4,7 +4,8 @@ import os.path
 class SendCoinsDialog(object):
     "Dialog box for sending Bitcoins to other accounts."
     
-    def __init__(self):
+    def __init__(self, client):
+        self.client = client
         self.setup_ui()
         self.window = self.builder.get_object("window")
         self.pay_to = self.builder.get_object("pay_to")
@@ -13,7 +14,7 @@ class SendCoinsDialog(object):
     def show(self):
         self.window.show()
 
-    def hide(self):
+    def close(self):
         self.window.hide()
         self.clear()
 
@@ -29,14 +30,17 @@ class SendCoinsDialog(object):
         self.builder.connect_signals(self)
 
     def on_window_delete_event(self, window, data=None):
-        self.hide()
+        self.close()
         return True
 
     def on_cancel_pressed(self, button, data=None):
-        self.hide()
+        self.close()
 
     def on_send_pressed(self, button, data=None):
-        pass
+        address = self.pay_to.get_text()
+        amount = float(self.amount.get_text())
+        self.client.send_to_address(address, amount)
+        self.close()
 
     def on_paste_pressed(self, button, data=None):
         clipboard = gtk.clipboard_get()
