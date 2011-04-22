@@ -2,6 +2,7 @@ import gobject
 import gtk
 import appindicator
 import authproxy
+import os.path
 
 class Application:
     "Main application class. Use Application.main to start."
@@ -29,11 +30,10 @@ class Application:
         "Create the indicator applet."
         self.indicator = appindicator.Indicator(
             "example-simple-client",
-            "indicator-messages",
+            os.path.abspath("ubitcoin-dark.svg"),
             appindicator.CATEGORY_APPLICATION_STATUS)
 
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
-        self.indicator.set_attention_icon("indicator-messages-new")
         self.indicator.set_menu(self.setup_menu())
 
     def setup_rpc(self):
