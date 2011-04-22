@@ -2,19 +2,49 @@ import authproxy
 import os.path
 import re
 
-class Client:
+class Event(object):
+    "Functor for event-based programming."
+    def __init__(self):
+        self.handlers = []
+
+    def __call__(self, handler):
+        self.handlers.append(handler)
+
+    def trigger(self, *args):
+        for handler in self.handlers:
+            handler(*args)
+
+class Client(object):
+    "Class for talking to the Bitcoin server via JSONRPC."
+
     def __init__(self):
         self.setup_config()
         self.setup_rpc()
+        self.setup_events()
+        self.last_transaction = None
 
-    def get_balance(self):
-        "Return the current balance held in Bitcoin's wallet."
-        return self.rpc.getinfo()['balance']
+    def poll(self):
+        "Poll the Bitcoin server for updates."
+        last_last_transaction = self.last_transaction
+        self.last_transaction = self.fetch_last_transaction()
+
+        if last_last_transaction != self.last_transaction:
+            self.on_transaction.trigger()
+
+    def update_balance(self):
+        self.balance = self.rpc.getinfo()['balance']
+
+    def fetch_last_transaction(self):
+        return self.rpc.listtransactions("*", 1)[0]
 
     def setup_config(self):
         config_path = os.path.expanduser("~/.bitcoin/bitcoin.conf")
         self.config = ConfigFile(config_path).read()
-        
+
+    def setup_events(self):
+        self.on_transaction = Event()
+        self.on_transaction(self.update_balance)
+
     def setup_rpc(self):
         rpc_url = "http://%s:%s@%s:%s" % (
             self.config.get('rpcuser', ''),
@@ -24,7 +54,7 @@ class Client:
         self.rpc = authproxy.AuthServiceProxy(rpc_url)
 
 
-class ConfigFile:
+class ConfigFile(object):
     "Class for reading Bitcoin config files."
 
     def __init__(self, path = None):

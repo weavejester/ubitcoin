@@ -16,16 +16,23 @@ class Application(object):
 
     def __init__(self):
         self.client = bitcoin.Client()
+        self.set_timer()
         self.setup_indicator()
-        self.setup_timer()
         self.setup_dialogs()
+        self.client.on_transaction(self.update_balance)
 
     def tick(self):
-        self.refresh_balance()
+        self.client.poll()
 
-    def refresh_balance(self):
-        balance = self.client.get_balance()
-        self.balance_item.child.set_text(u"Balance:  %.2f \u0E3F" % balance)
+    def update_balance(self):
+        text = u"Balance:  %.2f \u0E3F" % self.client.balance
+        self.balance_item.child.set_label(text)
+        self.refresh_menu()
+
+    def refresh_menu(self):
+        """Workaround for a bug in appindicator - menu needs to be reset
+        if any menu item changes, otherwise the change won't show up."""
+        self.indicator.set_menu(self.menu)
 
     def open_send_coins(self, _ = None):
         "Open the 'Send Coins' dialog."
@@ -41,16 +48,13 @@ class Application(object):
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
         self.indicator.set_menu(self.setup_menu())
         
-    def setup_timer(self):
-        gobject.timeout_add(2000, self.__tick)
+    def set_timer(self):
+        self.tick()
+        gobject.timeout_add(2000, self.set_timer)
 
     def setup_dialogs(self):
         self.send_coins_dialog = send_coins.SendCoinsDialog()
-        
-    def __tick(self):
-        self.tick()
-        self.setup_timer()
-        
+
     def setup_menu(self):
         "Create the main menu on the indicator."
         self.menu = gtk.Menu()
@@ -76,7 +80,7 @@ class Application(object):
     def add_balance_item(self):
         "Add a balance item to the menu."
         self.balance_item = gtk.MenuItem("Balance")
-        self.refresh_balance()
+        self.update_balance()
         self.balance_item.show()
         self.menu.append(self.balance_item)
 
