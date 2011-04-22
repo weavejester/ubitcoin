@@ -1,10 +1,11 @@
 import gobject
 import gtk
 import appindicator
-import bitcoin
 import os.path
+import bitcoin
+import send_coins
 
-class Application:
+class Application(object):
     "Main application class. Use Application.main to start."
 
     @classmethod
@@ -14,10 +15,10 @@ class Application:
         gtk.main()
 
     def __init__(self):
-        "Create the application."
         self.client = bitcoin.Client()
         self.setup_indicator()
         self.setup_timer()
+        self.setup_dialogs()
 
     def tick(self):
         self.refresh_balance()
@@ -25,7 +26,11 @@ class Application:
     def refresh_balance(self):
         balance = self.client.get_balance()
         self.balance_item.child.set_text(u"Balance:  %.2f \u0E3F" % balance)
-        
+
+    def open_send_coins(self, _ = None):
+        "Open the 'Send Coins' dialog."
+        self.send_coins_dialog.show()
+
     def setup_indicator(self):
         "Create the indicator applet."
         self.indicator = appindicator.Indicator(
@@ -39,6 +44,9 @@ class Application:
     def setup_timer(self):
         gobject.timeout_add(2000, self.__tick)
 
+    def setup_dialogs(self):
+        self.send_coins_dialog = send_coins.SendCoinsDialog()
+        
     def __tick(self):
         self.tick()
         self.setup_timer()
@@ -61,6 +69,7 @@ class Application:
     def add_send_coins_item(self):
         "Add a 'Send Coins' item to the menu."
         send_coins_item = gtk.MenuItem("Send Coins")
+        send_coins_item.connect("activate", self.open_send_coins)
         send_coins_item.show()
         self.menu.append(send_coins_item)
 
@@ -74,6 +83,6 @@ class Application:
     def add_quit_item(self):
         "Add a quit item to the menu."
         quit_item = gtk.MenuItem("Quit uBitcoin")
-        quit_item.connect("activate", exit)
+        quit_item.connect("activate", gtk.main_quit)
         quit_item.show()
         self.menu.append(quit_item)
