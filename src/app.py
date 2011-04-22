@@ -1,8 +1,7 @@
 import gobject
 import gtk
 import appindicator
-from authproxy import AuthServiceProxy
-from config_file import ConfigFile
+import bitcoin
 import os.path
 
 class Application:
@@ -16,7 +15,7 @@ class Application:
 
     def __init__(self):
         "Create the application."
-        self.setup_rpc()
+        self.client = bitcoin.Client()
         self.setup_indicator()
         self.setup_timer()
 
@@ -24,7 +23,7 @@ class Application:
         self.refresh_balance()
 
     def refresh_balance(self):
-        balance = self.rpc.getinfo()['balance']
+        balance = self.client.get_balance()
         self.balance_item.child.set_text(u"Balance:  %.2f \u0E3F" % balance)
         
     def setup_indicator(self):
@@ -36,15 +35,6 @@ class Application:
 
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
         self.indicator.set_menu(self.setup_menu())
-
-    def setup_rpc(self):
-        config = ConfigFile().read()
-        rpc_url = "http://%s:%s@%s:%s" % (
-            config.get('rpcuser', ''),
-            config['rpcpassword'],
-            config.get('rpcconnect', '127.0.0.1'),
-            config.get('rpcport', '8332'))
-        self.rpc = AuthServiceProxy(rpc_url)
         
     def setup_timer(self):
         gobject.timeout_add(2000, self.__tick)
