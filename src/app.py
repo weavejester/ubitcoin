@@ -3,7 +3,9 @@ import appindicator
 import os.path
 import timer
 import bitcoin
+
 from send_coins import SendCoinsDialog
+from balance import BalanceDialog
 
 class Application(object):
     "Main application class. Use Application.main to start."
@@ -21,7 +23,7 @@ class Application(object):
 
     def update_balance(self):
         balance = self.client.get_balance()
-        menu_text = u"Balance:  %.2f \u0E3F" % balance
+        menu_text = "Balance:  %.2f BTC" % balance
         self.balance_item.child.set_label(menu_text)
         self.refresh_menu()
 
@@ -34,6 +36,10 @@ class Application(object):
         "Open the 'Send Coins' dialog."
         self.send_coins_dialog.show()
 
+    def open_balance(self, _ = None):
+        "Open the 'Balance' dialog."
+        self.balance_dialog.show()
+        
     def setup_indicator(self):
         "Create the indicator applet."
         self.indicator = appindicator.Indicator(
@@ -52,6 +58,7 @@ class Application(object):
 
     def setup_dialogs(self):
         self.send_coins_dialog = SendCoinsDialog(self.client)
+        self.balance_dialog = BalanceDialog(self.client)
 
     def setup_menu(self):
         "Create the main menu on the indicator."
@@ -79,6 +86,7 @@ class Application(object):
         "Add a balance item to the menu."
         self.balance_item = gtk.MenuItem("Balance")
         self.update_balance()
+        self.balance_item.connect("activate", self.open_balance)
         self.balance_item.show()
         self.menu.append(self.balance_item)
 

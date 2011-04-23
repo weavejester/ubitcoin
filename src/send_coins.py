@@ -1,20 +1,23 @@
 import gtk
-import os.path
+import window
 
-class SendCoinsDialog(object):
+class SendCoinsDialog(window.Base):
     "Dialog box for sending Bitcoins to other accounts."
     
     def __init__(self, client):
+        "Creates the dialog. Takes a bitcoin.Client object as an argument."
+        window.Base.__init__(self, "send_coins.xml")
         self.client = client
-        self.setup_ui()
         self.window = self.builder.get_object("window")
         self.pay_to = self.builder.get_object("pay_to")
         self.amount = self.builder.get_object("amount")
 
     def show(self):
+        "Show the window."
         self.window.show()
 
     def close(self):
+        "Close and clear the window."
         self.window.hide()
         self.clear()
 
@@ -22,14 +25,7 @@ class SendCoinsDialog(object):
         self.pay_to.set_text("")
         self.amount.set_text("")
 
-    def setup_ui(self):
-        current_dir = os.path.dirname(__file__)
-        ui_file = os.path.join(current_dir, "send_coins.xml")
-        self.builder = gtk.Builder()
-        self.builder.add_from_file(ui_file)
-        self.builder.connect_signals(self)
-
-    def on_window_delete_event(self, window, data=None):
+    def on_window_close(self, window, data=None):
         self.close()
         return True
 
