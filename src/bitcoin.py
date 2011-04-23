@@ -1,6 +1,8 @@
 import authproxy
 import os.path
 import re
+import urllib
+import json
 
 class Event(object):
     "Functor for event-based programming."
@@ -30,6 +32,15 @@ class Client(object):
     def send_to_address(self, address, amount):
         "Send an amount of bitcoins to a bitcoin address."
         self.rpc.sendtoaddress(address, amount)
+
+    def get_usd_buy_rate(self):
+        ticker = self.get_mt_gox_ticker()
+        return ticker['buy']
+
+    def get_mt_gox_ticker(self):
+        ticker_url = "http://mtgox.com/code/data/ticker.php"
+        response = json.load(urllib.urlopen(ticker_url))
+        return response['ticker']
 
     def poll_transactions(self):
         "Poll the Bitcoin server for new transactions."

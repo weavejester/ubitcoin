@@ -18,8 +18,8 @@ class Application(object):
 
     def __init__(self):
         self.setup_client()
-        self.setup_indicator()
         self.setup_dialogs()
+        self.setup_indicator()
 
     def update_balance(self):
         balance = self.client.get_balance()

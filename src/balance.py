@@ -15,8 +15,10 @@ class BalanceDialog(window.Base):
     def update_balance(self):
         "Update the balance label to show the current balance."
         if self.is_visible():
-            balance = self.client.get_balance()
-            label_text = "<b>%.2f BTC</b>" % balance
+            btc  = self.client.get_balance()
+            rate = self.client.get_usd_buy_rate()
+            usd  = float(btc) * rate
+            label_text = "<b>%.2f BTC</b>\n(%.2f USD @ %.4f)" % (btc, usd, rate)
             self.balance.set_label(label_text)
 
     def is_visible(self):
