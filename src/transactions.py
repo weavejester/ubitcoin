@@ -37,38 +37,46 @@ class TransactionsWindow(window.Base):
         self.transaction_table = self.builder.get_object("transactions_table")
         self.transaction_table.set_model(self.setup_store())
         self.text_renderer = gtk.CellRendererText()
-        self.add_date_column("Date", 0)
+        self.add_text_column("Date", 0, self.format_datetime)
         self.add_text_column("Description", 1)
-        self.add_number_column("Amount", 2)
-        self.add_text_column("Status", 3)
+        self.add_text_column("Debit", 2, self.format_debit)
+        self.add_text_column("Credit", 2, self.format_credit)
+        self.add_text_column("Status", 3, self.format_status)
 
-    def add_date_column(self, title, index):
-        "Add a table column for displaying a datetime from a timestamp."
-        column = gtk.TreeViewColumn(title, self.text_renderer)
-        column.set_cell_data_func(self.text_renderer, self.render_datetime, index)
-        self.transaction_table.append_column(column)
-
-    def render_datetime(self, _, renderer, model, iter, index):
-        "Render a timestamp as a formatted datetime table cell."
-        timestamp = model.get_value(iter, index)
+    def format_datetime(self, timestamp):
+        "Turn a timestamp integer into a formatted date/time string."
         dt = datetime.fromtimestamp(timestamp)
-        renderer.set_property('text', dt.strftime("%Y-%m-%d %H:%m:%S"))
+        return dt.strftime("%Y-%m-%d %H:%m:%S")
 
-    def add_number_column(self, title, index):
-        "Add a table column for displaying numerical data."
+    def format_credit(self, amount):
+        "Format an amount of money if it credits the account."
+        return "%.2f" % amount if amount >= 0 else ""
+
+    def format_debit(self, amount):
+        "Format an amount of money if it debits the account."
+        return "%.2f" % amount if amount < 0 else ""
+
+    def format_status(self, confirmations):
+        return "Confirmed" if confirmations >= 6 else "Unconfirmed"
+
+    def add_text_column(self, title, index, formatter=None):
+        "Add a text table column with an optional formatter function."
         column = gtk.TreeViewColumn(title, self.text_renderer)
-        column.set_cell_data_func(self.text_renderer, self.render_number, index)
+        if formatter is None:
+            column.set_attributes(self.text_renderer, text=index)
+        else:
+            column.set_cell_data_func(
+                self.text_renderer,
+                self.make_cell_formatter(formatter, index))
         self.transaction_table.append_column(column)
 
-    def render_number(self, _, renderer, model, iter, index):
-        "Render a floating point number as a table cell."
-        number = model.get_value(iter, index)
-        renderer.set_property('text', "%.2f" % number)
-
-    def add_text_column(self, title, index):
-        "Add a plain-text table column."
-        column = gtk.TreeViewColumn(title, self.text_renderer, text=index)
-        self.transaction_table.append_column(column)
+    def make_cell_formatter(self, formatter, index):
+        """Create a cell renderer from a formatter function that turns an object
+        in a tree model into a string."""
+        def cell_renderer(_, cell, model, iter, data=None):
+            raw_value = model.get_value(iter, index)
+            cell.set_property('text', formatter(raw_value))
+        return cell_renderer
 
     def show(self):
         "Show the window."
