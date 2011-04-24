@@ -44,16 +44,30 @@ class Client(object):
 
     def poll_transactions(self):
         "Poll the Bitcoin server for new transactions."
-        last_last_transaction = self.last_transaction
-        self.last_transaction = self.get_last_transaction()
+        pen_transaction = self.last_transaction
+        ult_transaction = self.get_last_transaction()
 
-        if last_last_transaction != self.last_transaction:
+        if pen_transaction != ult_transaction:
             self.on_transaction.trigger()
 
+        self.last_transaction = ult_transaction
+
     def get_last_transaction(self):
+        "Get the last transaction made."
         return self.get_transactions(1)[0]
 
+    def get_new_transactions(self, n):
+        """Get all new transactions since the last time poll_transactions was
+        called, up to a maximum of n."""
+        print "Getting new transactions"
+        for transaction in reversed(self.get_transactions(n)):
+            if transaction != self.last_transaction:
+                yield transaction
+            else:
+                break
+
     def get_transactions(self, n):
+        "Get the last n transactions."
         return self.rpc.listtransactions("*", n)
     
     def setup_config(self):

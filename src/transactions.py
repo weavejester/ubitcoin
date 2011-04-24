@@ -12,16 +12,17 @@ class TransactionsWindow(window.Base):
         self.client = client
         self.window = self.builder.get_object("window")
         self.setup_table()
+        self.client.on_transaction(self.add_new_transactions)
 
     def setup_store(self):
         "Setup the ListStore that holds the transaction data."
         self.transactions = gtk.ListStore(long, str, float, int)
-        self.add_all_transactions()
         return self.transactions
 
-    def add_all_transactions(self, n=1000):
-        "Add all of the transactions the client has listed, up to a max of n."
-        for transaction in self.client.get_transactions(n):
+    def add_new_transactions(self):
+        "Add any new transactions."
+        transactions = list(self.client.get_new_transactions(1000))
+        for transaction in reversed(transactions):
             self.add_transaction(transaction)
 
     def add_transaction(self, transaction):
