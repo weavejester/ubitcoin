@@ -51,8 +51,11 @@ class Client(object):
             self.on_transaction.trigger()
 
     def get_last_transaction(self):
-        return self.rpc.listtransactions("*", 1)[0]
+        return self.get_transactions(1)[0]
 
+    def get_transactions(self, n):
+        return self.rpc.listtransactions("*", n)
+    
     def setup_config(self):
         config_path = os.path.expanduser("~/.bitcoin/bitcoin.conf")
         self.config = ConfigFile(config_path).read()
