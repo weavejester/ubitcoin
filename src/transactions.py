@@ -26,7 +26,7 @@ class TransactionsWindow(window.Base):
 
     def add_transaction(self, transaction):
         "Add a new transaction dictionary to the transactions table."
-        self.transactions.append([
+        self.transactions.prepend([
                 transaction['time'],
                 transaction['address'],
                 transaction['amount'],
