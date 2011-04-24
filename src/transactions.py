@@ -14,25 +14,33 @@ class TransactionsWindow(window.Base):
         self.setup_table()
 
     def setup_store(self):
-        self.transactions = gtk.ListStore(str, str, str, str, str)
-        self.transactions.append(["a", "b", "c", "d", "e"])
+        self.transactions = gtk.ListStore(long, str, float, int)
+        self.add_all_transactions()
         return self.transactions
 
+    def add_all_transactions(self, n=1000):
+        for transaction in self.client.get_transactions(n):
+            self.add_transaction(transaction)
+
     def add_transaction(self, transaction):
-        pass
+        "Add a new transaction dictionary to the transactions table."
+        self.transactions.append([
+                transaction['time'],
+                transaction['address'],
+                transaction['amount'],
+                transaction['confirmations']])
     
     def setup_table(self):
         self.transaction_table = self.builder.get_object("transactions_table")
         self.transaction_table.set_model(self.setup_store())
         self.cell_renderer = gtk.CellRendererText()
-        self.add_column("Date")
-        self.add_column("Description")
-        self.add_column("Debit")
-        self.add_column("Credit")
-        self.add_column("Status")
+        self.add_column("Date", 0)
+        self.add_column("Description", 1)
+        self.add_column("Amount", 2)
+        self.add_column("Status", 3)
 
-    def add_column(self, title):
-        column = gtk.TreeViewColumn(title, self.cell_renderer, text=0)
+    def add_column(self, title, index):
+        column = gtk.TreeViewColumn(title, self.cell_renderer, text=index)
         self.transaction_table.append_column(column)
         
     def show(self):
