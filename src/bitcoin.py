@@ -3,27 +3,18 @@ import os.path
 import re
 import urllib
 import json
-
-class Event(object):
-    "Functor for event-based programming."
-    def __init__(self):
-        self.handlers = []
-
-    def __call__(self, handler):
-        self.handlers.append(handler)
-
-    def trigger(self, *args):
-        for handler in self.handlers:
-            handler(*args)
+import event
 
 class Client(object):
     "Class for talking to the Bitcoin server via JSONRPC."
 
     def __init__(self):
+        "Create a new Bitcoin client class."
         self.setup_config()
         self.setup_rpc()
-        self.on_transaction = Event()
-        self.last_transaction = None
+        self.on_transaction = event.Event()
+        self.on_block = event.Event()
+        self.setup_polling()
 
     def get_balance(self):
         "Get the current bitcoin balance."
@@ -34,23 +25,19 @@ class Client(object):
         self.rpc.sendtoaddress(address, amount)
 
     def get_usd_buy_rate(self):
+        "Get the amount of USD that 1 BTC is being bought for."
         ticker = self.get_mt_gox_ticker()
         return ticker['buy']
 
     def get_mt_gox_ticker(self):
+        "Return ticker information from Mt. Gox."
         ticker_url = "http://mtgox.com/code/data/ticker.php"
         response = json.load(urllib.urlopen(ticker_url))
         return response['ticker']
 
-    def poll_transactions(self):
-        "Poll the Bitcoin server for new transactions."
-        pen_transaction = self.last_transaction
-        ult_transaction = self.get_last_transaction()
-
-        if pen_transaction != ult_transaction:
-            self.on_transaction.trigger()
-
-        self.last_transaction = ult_transaction
+    def get_block_number(self):
+        "Get the current block number."
+        return self.rpc.getblocknumber()
 
     def get_last_transaction(self):
         "Get the last transaction made."
@@ -61,7 +48,7 @@ class Client(object):
         called, up to a maximum of n."""
         print "Getting new transactions"
         for transaction in reversed(self.get_transactions(n)):
-            if transaction != self.last_transaction:
+            if transaction != self.poll_transactions.last_value:
                 yield transaction
             else:
                 break
@@ -81,6 +68,17 @@ class Client(object):
             self.config.get('rpcconnect', '127.0.0.1'),
             self.config.get('rpcport', '8332'))
         self.rpc = authproxy.AuthServiceProxy(rpc_url)
+
+    def setup_polling(self):
+        self.poll_transactions = event.OnChange(
+            self.get_last_transaction, self.on_transaction)
+        self.poll_blocks = event.OnChange(
+            self.get_block_number, self.on_block)
+
+    def poll(self):
+        "Poll the Bitcoin server for new transactions or blocks."
+        self.poll_transactions()
+        self.poll_blocks()
 
 
 class ConfigFile(object):
