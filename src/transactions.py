@@ -32,7 +32,7 @@ class TransactionsWindow(window.Base):
                 transaction['address'],
                 transaction['amount'],
                 transaction['confirmations']])
-    
+
     def setup_table(self):
         "Setup the transactons table."
         self.transaction_table = self.builder.get_object("transactions_table")
@@ -43,6 +43,12 @@ class TransactionsWindow(window.Base):
         self.add_text_column("Debit", 2, self.format_debit)
         self.add_text_column("Credit", 2, self.format_credit)
         self.add_text_column("Status", 3, self.format_status)
+
+    def on_scrolled_window_size_allocate(self, window, event, data=None):
+        """Ensure scrolled transaction window snaps to top when new transactions
+        are added to the table."""
+        vadjustment = window.get_vadjustment()
+        vadjustment.set_value(vadjustment.get_lower())
 
     def format_datetime(self, timestamp):
         "Turn a timestamp integer into a formatted date/time string."
