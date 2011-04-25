@@ -46,7 +46,6 @@ class Client(object):
     def get_new_transactions(self, n):
         """Get all new transactions since the last time poll_transactions was
         called, up to a maximum of n."""
-        print "Getting new transactions"
         for transaction in reversed(self.get_transactions(n)):
             if transaction != self.poll_transactions.last_value:
                 yield transaction

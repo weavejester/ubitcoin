@@ -23,6 +23,7 @@ class Application(object):
         self.setup_client()
         self.setup_windows()
         self.setup_indicator()
+        self.client.poll()
 
     def update_balance(self):
         balance = self.client.get_balance()
@@ -49,7 +50,7 @@ class Application(object):
         "Setup the Bitcoin RPC client."
         self.client = bitcoin.Client()
         self.client.on_transaction(self.update_balance)
-        timer.periodic_timer(2000, self.client.poll_transactions)
+        timer.periodic_timer(2000, self.client.poll)
 
     def setup_windows(self):
         self.send_coins_dialog = SendCoinsDialog(self.client)
