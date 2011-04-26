@@ -16,7 +16,7 @@ class TransactionsWindow(window.Base):
         self.client.on_block(self.update_transactions)
 
     def update_transactions(self):
-        print "On block"
+        "Update the transaction confirmations when a new block arrives."
         for row in self.transactions:
             transaction = row[0]
             if not transaction.is_confirmed():
@@ -31,7 +31,6 @@ class TransactionsWindow(window.Base):
 
     def add_new_transactions(self):
         "Add any new transactions."
-        print "On transaction"
         transactions = list(self.client.get_new_transactions(1000))
         for transaction in reversed(transactions):
             self.transactions.prepend([transaction])
