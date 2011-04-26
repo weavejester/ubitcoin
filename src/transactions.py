@@ -13,36 +13,39 @@ class TransactionsWindow(window.Base):
         self.window = self.builder.get_object("window")
         self.setup_table()
         self.client.on_transaction(self.add_new_transactions)
+        self.client.on_block(self.update_transactions)
+
+    def update_transactions(self):
+        print "On block"
+        for row in self.transactions:
+            transaction = row[0]
+            if not transaction.is_confirmed():
+                new_transaction = transaction.reload()
+                if new_transaction.is_confirmed():
+                    self.transactions.set_value(row.iter, 0, new_transaction)
 
     def setup_store(self):
         "Setup the ListStore that holds the transaction data."
-        self.transactions = gtk.ListStore(long, str, float, int)
+        self.transactions = gtk.ListStore(object)
         return self.transactions
 
     def add_new_transactions(self):
         "Add any new transactions."
+        print "On transaction"
         transactions = list(self.client.get_new_transactions(1000))
         for transaction in reversed(transactions):
-            self.add_transaction(transaction)
-
-    def add_transaction(self, transaction):
-        "Add a new transaction dictionary to the transactions table."
-        self.transactions.prepend([
-                transaction['time'],
-                transaction['address'],
-                transaction['amount'],
-                transaction['confirmations']])
+            self.transactions.prepend([transaction])
 
     def setup_table(self):
         "Setup the transactons table."
         self.transaction_table = self.builder.get_object("transactions_table")
         self.transaction_table.set_model(self.setup_store())
         self.text_renderer = gtk.CellRendererText()
-        self.add_text_column("Date", 0, self.format_datetime)
-        self.add_text_column("Description", 1)
-        self.add_text_column("Debit", 2, self.format_debit)
-        self.add_text_column("Credit", 2, self.format_credit)
-        self.add_text_column("Status", 3, self.format_status)
+        self.add_text_column("Date", self.format_datetime)
+        self.add_text_column("Description", self.format_description)
+        self.add_text_column("Debit", self.format_debit)
+        self.add_text_column("Credit", self.format_credit)
+        self.add_text_column("Status", self.format_status)
 
     def on_scrolled_window_size_allocate(self, window, event, data=None):
         """Ensure scrolled transaction window snaps to top when new transactions
@@ -50,31 +53,27 @@ class TransactionsWindow(window.Base):
         vadjustment = window.get_vadjustment()
         vadjustment.set_value(vadjustment.get_lower())
 
-    def format_datetime(self, timestamp):
-        "Turn a timestamp integer into a formatted date/time string."
-        dt = datetime.fromtimestamp(timestamp)
-        return dt.strftime("%Y-%m-%d %H:%m:%S")
+    def format_datetime(self, transaction):
+        return transaction.datetime.strftime("%Y-%m-%d %H:%m:%S")
 
-    def format_credit(self, amount):
-        "Format an amount of money if it credits the account."
-        return "%.2f" % amount if amount >= 0 else ""
+    def format_description(self, transaction):
+        return transaction.address
 
-    def format_debit(self, amount):
-        "Format an amount of money if it debits the account."
-        return "%.2f" % amount if amount < 0 else ""
+    def format_credit(self, transaction):
+        return "%.2f" % transaction.amount if transaction.amount >= 0 else ""
 
-    def format_status(self, confirmations):
-        return "Confirmed" if confirmations >= 6 else "Unconfirmed"
+    def format_debit(self, transaction):
+        return "%.2f" % transaction.amount if transaction.amount < 0 else ""
 
-    def add_text_column(self, title, index, formatter=None):
-        "Add a text table column with an optional formatter function."
+    def format_status(self, transaction):
+        return "Confirmed" if transaction.is_confirmed() else "Unconfirmed"
+
+    def add_text_column(self, title, getter):
+        "Add a text table column with a getter function."
         column = gtk.TreeViewColumn(title, self.text_renderer)
-        if formatter is None:
-            column.set_attributes(self.text_renderer, text=index)
-        else:
-            column.set_cell_data_func(
-                self.text_renderer,
-                self.make_cell_formatter(formatter, index))
+        column.set_cell_data_func(
+            self.text_renderer,
+            self.make_cell_formatter(getter, 0))
         self.transaction_table.append_column(column)
 
     def make_cell_formatter(self, formatter, index):

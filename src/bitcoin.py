@@ -4,6 +4,32 @@ import re
 import urllib
 import json
 import event
+from datetime import datetime
+
+class Transaction(object):
+    "Class representing a Bitcoin transaction."
+
+    def __init__(self, client, attrs):
+        self.client = client
+        self.update(attrs)
+
+    def update(self, attrs):
+        self.id = attrs['txid']
+        self.timestamp = attrs['time']
+        self.address = attrs['address']
+        self.amount = attrs['amount']
+        self.confirmations = attrs['confirmations']
+
+    def reload(self):
+        return self.client.get_transaction_by_id(self.id)
+
+    @property
+    def datetime(self):
+        return datetime.fromtimestamp(self.timestamp)
+
+    def is_confirmed(self):
+        return self.confirmations >= 6
+
 
 class Client(object):
     "Class for talking to the Bitcoin server via JSONRPC."
@@ -39,9 +65,9 @@ class Client(object):
         "Get the current block number."
         return self.rpc.getblocknumber()
 
-    def get_last_transaction(self):
+    def get_last_transaction_id(self):
         "Get the last transaction made."
-        return self.get_transactions(1)[0]
+        return self.get_transactions(1)[0].id
 
     def get_new_transactions(self, n):
         """Get all new transactions since the last time poll_transactions was
@@ -52,9 +78,15 @@ class Client(object):
             else:
                 break
 
+    def get_transaction_by_id(self, txid):
+        "Get a transaction by its transaction ID."
+        response = self.rpc.gettransaction(txid)
+        response.update(response['details'][0])
+        return Transaction(self, response)
+
     def get_transactions(self, n):
         "Get the last n transactions."
-        return self.rpc.listtransactions("*", n)
+        return [Transaction(self, t) for t in self.rpc.listtransactions("*", n)]
     
     def setup_config(self):
         config_path = os.path.expanduser("~/.bitcoin/bitcoin.conf")
@@ -70,7 +102,7 @@ class Client(object):
 
     def setup_polling(self):
         self.poll_transactions = event.OnChange(
-            self.get_last_transaction, self.on_transaction)
+            self.get_last_transaction_id, self.on_transaction)
         self.poll_blocks = event.OnChange(
             self.get_block_number, self.on_block)
 
